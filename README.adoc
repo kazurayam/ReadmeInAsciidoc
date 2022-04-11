@@ -1,0 +1,64 @@
+:toc:
+
+= 目次つきのREADMEを作る ただしローカルでAsciidocからMarkdownへ変換する方法で
+
+kazurayam
+v0.1, 2022-01-23
+
+== Problem to solve
+
+GitHubプロジェクトを自作したらREADMEドキュメントをかならず書く。READMEドキュメントはMarkdownの構文で書くのが普通だ。Markdownはシンプルで短い説明を書くにはとても使いやすいが、長い文章を書くにはいささか非力だ。特にプログラムのソースコードをそのままREADMEに引用することができないので、いちいちコピペしなければならないのがつらい。
+
+ネットをあちこち調べて Asciidocの構文でREADMEの原稿を書いてMarkdownに変換する方法を見つけた。そのスクリプトは下記のURLに公開されていたものだ。
+
+- https://github.com/github/markup/issues/1095 9th June 2021に chevdoor が投稿したコード
+
+...と言うことを以前私はQiitaに投稿した。
+
+- https://qiita.com/kazurayam/items/361fdcd6846bba7bd03a
+
+さてAsciidocでドキュメントの原稿を書いてMarkdownに変換したものをpublishするやり方はとても楽なので、ついつい長くて懇切丁寧な文章を書いてしまう。すると目次 (Table of contents) が欲しくなる。TOCを自動的に作りたいがどうやればいいか？
+
+== [[section2]]Solution
+
+=== My previous solution
+
+GitHubで公開するREADMEドキュメントにTOCを自動的につける方法がネット上にいくつも提案され実用されている。わたしも下記のツールを何年も使ってきた。
+
+- https://github.com/technote-space/toc-generator
+
+このツールはちゃんと動くし便利だ。このツールは GitHub Action として動作する。
+
+=== 従来の方法の課題
+
+前述のツールを使っていて不便に思う場面があった。わたしがREADME.mdファイルを編集してgit addしてgit commitしてgit pushする。するとpushのインベントを受けてGitHub Actionが起動され、README.mdファイルにTOCを挿入する。するとリモートレポジトリの中に格納されたREADME.mdファイルはわたしの手元にあるREADME.mdよりも1回分コミットが進んだ状態になる。だから私は次にREADME.mdを編集する前にgit pullしなければならない。さもないとローカルのREADME.mdファイルとリモートのREADME.mdファイルが同期しなくなってあとでmerge conflictが発生する。いったん発生したconflictをもみ消す作業はなかなか厄介だ。
+
+ちょっと待てよ。わたしはAsciidocで原稿を書いてそれを入力としてMarkdownを生成するというアクションをbashシェルスクリプトとして記述し、手元のPC上で実行している。ならば目次を生成するのをローカルで実行できるのではないか？GitHub Actionに頼るのではなく。
+
+調べたら出来ました。
+
+== [[section3]]Description of my new solution
+
+bashシェルスクリプト `readmeconv.sh` を次のように修正した
+
+[quote, shell]
+----
+include::readmeconv.sh[]
+----
+
+pandocコマンドに `--standalon --toc` というオプションを指定することが肝心。
+
+コマンドラインで`readmeconv.sh`を実行するとき、`-t`オプションを付けるとTOCが生成されて`README.md`ファイルの先頭に挿入される。
+```
+$ ./readmeconv.sh -t
+```
+
+image::docs/images/README_with_TOC.png[README_with_TOC]
+
+もちろん `-t` オプションを指定しなれば従前通りTOC無しで`README.md`ファイルが生成される。
+
+```
+$ ./readmeconv.sh
+```
+
+
